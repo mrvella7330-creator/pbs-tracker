@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Yarralinka PBS Points</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Montserrat:wght@500;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#1a1a2e;
+    font-family:'Montserrat',sans-serif;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+  }
+
+  header { display:flex; align-items:center; gap:18px; }
+  header img { height:70px; }
+  header h1 { font-family:'Oswald',sans-serif; font-size:2rem; color:#f5f0e8; letter-spacing:2px; line-height:1.1; }
+  header h1 span { color:#e8b84b; }
+  header p { font-size:0.58rem; color:#c8972a; letter-spacing:5px; font-weight:700; margin-top:3px; }
+
+  /* Card */
+  .card {
+    border:3px solid #c8972a; border-radius:12px; background:#14142a;
+    padding:28px 80px 24px; text-align:center;
+    box-shadow:0 0 40px rgba(200,151,42,0.22); min-width:380px;
+  }
+  .card-label { font-family:'Oswald',sans-serif; font-size:0.75rem; letter-spacing:8px; color:#c8972a; margin-bottom:6px; }
+
+  /* Masked input */
+  .mask-wrap {
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .mask-wrap input {
+    font-family:'Oswald',sans-serif; font-size:clamp(4rem, 18vw, 9rem); font-weight:700;
+    background:transparent; border:none; outline:none;
+    color:transparent; caret-color:#c8972a;
+    width:4ch; min-width:2ch; text-align:center;
+    -moz-appearance:textfield;
+  }
+  .mask-wrap input::-webkit-outer-spin-button,
+  .mask-wrap input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .mask-wrap .stars {
+    position:absolute; pointer-events:none;
+    font-family:'Oswald',sans-serif; font-size:clamp(4rem, 18vw, 9rem); font-weight:700;
+    color:#c8972a88; letter-spacing:4px; white-space:nowrap;
+  }
+
+  /* Revealed score */
+  .score {
+    font-family:'Oswald',sans-serif; font-size:clamp(4rem, 18vw, 9rem); font-weight:700;
+    line-height:1; color:#e8b84b;
+    text-shadow:0 0 30px rgba(232,184,75,0.5);
+    display:none;
+  }
+  .score.pop { animation:pop 0.4s ease; }
+  @keyframes pop {
+    35% { transform:scale(1.13); color:#fff; text-shadow:0 0 40px #fff; }
+    70% { transform:scale(0.97); }
+    100% { transform:scale(1); }
+  }
+  .score.pulse {
+    animation: scorePulse 0.35s ease;
+  }
+  @keyframes scorePulse {
+    0%   { transform:scale(1); }
+    40%  { transform:scale(1.08); color:#fff; text-shadow:0 0 50px #fff, 0 0 20px #e8b84b; }
+    100% { transform:scale(1); }
+  }
+
+  /* History log */
+  .history-log {
+    display:none; width:100%; max-width:480px;
+    background:#0d0d22; border:1px solid #c8972a33; border-radius:10px;
+    padding:10px 14px; margin-top:-10px;
+  }
+  .history-log.show { display:block; }
+  .history-title {
+    font-family:'Oswald',sans-serif; font-size:0.6rem; letter-spacing:5px;
+    color:#c8972a88; font-weight:700; margin-bottom:8px;
+  }
+  .history-item {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:5px 0; border-bottom:1px solid #c8972a1a; font-size:0.75rem;
+    animation: histSlide 0.3s ease;
+  }
+  .history-item:last-child { border-bottom:none; }
+  @keyframes histSlide { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:none; } }
+  .history-item .hist-reward { color:#e8b84b; font-family:'Oswald',sans-serif; font-weight:700; letter-spacing:1px; }
+  .history-item .hist-meta   { color:#c8972a66; font-size:0.65rem; }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-top:18px; width:100%;
+  }
+  .progress-labels {
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'Oswald',sans-serif; font-size:0.65rem;
+    color:#c8972a88; letter-spacing:1px; margin-bottom:5px;
+  }
+  .progress-labels .next-label { color:#e8b84b; font-size:0.7rem; }
+  .progress-track {
+    width:100%; height:10px; background:#0d0d22;
+    border-radius:6px; overflow:hidden;
+    border:1px solid #c8972a33;
+  }
+  .progress-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg,#8b0000,#c8972a,#e8b84b);
+    border-radius:6px;
+    transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
+    box-shadow:0 0 8px rgba(232,184,75,0.4);
+  }
+  .progress-fill.full {
+    background:linear-gradient(90deg,#c8972a,#e8b84b,#fff);
+    box-shadow:0 0 16px rgba(232,184,75,0.8);
+    animation:pulse 1s ease infinite alternate;
+  }
+  @keyframes pulse { from { opacity:0.8; } to { opacity:1; } }
+
+  /* Buttons row */
+  .btn-row { display:flex; gap:12px; align-items:center; }
+  button {
+    font-family:'Oswald',sans-serif; font-weight:700;
+    cursor:pointer; border:none; transition:all 0.15s;
+  }
+  button:active { transform:scale(0.94); }
+
+  .btn-reveal {
+    font-size:1rem; letter-spacing:2px; padding:13px 40px; border-radius:50px;
+    background:linear-gradient(135deg,#8b0000,#b22234); color:#f5f0e8;
+    box-shadow:0 0 20px rgba(178,34,52,0.5);
+  }
+  .btn-reveal:hover { box-shadow:0 0 35px rgba(178,34,52,0.8); transform:scale(1.04); }
+  .btn-reveal.done {
+    background:linear-gradient(135deg,#5a3800,#c8972a);
+    box-shadow:0 0 20px rgba(200,151,42,0.5);
+    cursor:default; transform:none;
+  }
+
+  .btn-reset {
+    font-size:0.85rem; letter-spacing:1px; padding:13px 22px; border-radius:50px;
+    background:transparent; color:#ffffff44;
+    border:2px solid #ffffff1a;
+  }
+  .btn-reset:hover { border-color:#b22234; color:#b22234; }
+
+  /* Milestones */
+  .milestones { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .milestones-label { font-size:0.58rem; letter-spacing:4px; color:#c8972a; font-weight:700; }
+  .milestone {
+    display:flex; align-items:center;
+    border:2px solid #c8972a44; border-radius:20px; overflow:hidden; transition:all 0.3s;
+  }
+  .milestone.reached { border-color:#c8972a; box-shadow:0 0 12px rgba(200,151,42,0.5); }
+  .milestone.next-up { border-color:#c8972a99; }
+  .milestone.advance { animation:chipPop 0.5s ease; }
+  @keyframes chipPop { 40% { transform:scale(1.25); } 70% { transform:scale(0.95); } 100% { transform:scale(1.05); } }
+
+  /* Reset confirm overlay */
+  .confirm-overlay {
+    display:none; position:fixed; inset:0; background:#00000088;
+    align-items:center; justify-content:center; z-index:200;
+  }
+  .confirm-overlay.show { display:flex; }
+  .confirm-box {
+    background:#14142a; border:2px solid #b22234; border-radius:14px;
+    padding:32px 40px; text-align:center;
+    box-shadow:0 0 40px rgba(178,34,52,0.4);
+  }
+  .confirm-box p { font-family:'Oswald',sans-serif; font-size:1.1rem; color:#f5f0e8; letter-spacing:1px; margin-bottom:20px; }
+  .confirm-box p span { color:#b22234; }
+  .confirm-actions { display:flex; gap:12px; justify-content:center; }
+  .btn-confirm-yes {
+    font-size:0.9rem; letter-spacing:2px; padding:10px 28px; border-radius:50px;
+    background:linear-gradient(135deg,#8b0000,#b22234); color:#f5f0e8;
+    border:none; cursor:pointer; font-family:'Oswald',sans-serif; font-weight:700;
+  }
+  .btn-confirm-yes:hover { box-shadow:0 0 20px rgba(178,34,52,0.6); }
+  .btn-confirm-no {
+    font-size:0.9rem; letter-spacing:2px; padding:10px 28px; border-radius:50px;
+    background:transparent; color:#c8972a; border:2px solid #c8972a;
+    cursor:pointer; font-family:'Oswald',sans-serif; font-weight:700;
+  }
+  .btn-confirm-no:hover { background:#c8972a22; }
+
+  #confetti { position:fixed; inset:0; pointer-events:none; z-index:99; }
+
+  /* ── Wheel modal ── */
+  .wheel-overlay {
+    display:none; position:fixed; inset:0;
+    background:#000000cc; align-items:center; justify-content:center;
+    z-index:300;
+  }
+  .wheel-overlay.show { display:flex; }
+  .wheel-box {
+    background:#14142a; border:3px solid #c8972a; border-radius:20px;
+    padding:28px 32px; display:flex; flex-direction:column; align-items:center; gap:16px;
+    box-shadow:0 0 80px rgba(200,151,42,0.5);
+    animation:wheelPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes wheelPop { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .wheel-title {
+    font-family:'Oswald',sans-serif; font-size:1.3rem; font-weight:700;
+    color:#e8b84b; letter-spacing:3px; text-align:center;
+  }
+  .wheel-wrap { position:relative; width:420px; height:420px; }
+  #wheelCanvas { border-radius:50%; display:block; }
+  /* pointer arrow */
+  .wheel-pointer {
+    position:absolute; top:-18px; left:50%; transform:translateX(-50%);
+    width:0; height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-top:28px solid #e8b84b;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    z-index:2;
+  }
+  .btn-spin {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:1.1rem;
+    letter-spacing:3px; padding:14px 50px; border-radius:50px; border:none;
+    cursor:pointer; background:linear-gradient(135deg,#8b0000,#b22234); color:#f5f0e8;
+    box-shadow:0 0 20px rgba(178,34,52,0.5); transition:all 0.15s;
+  }
+  .btn-spin:hover { box-shadow:0 0 35px rgba(178,34,52,0.8); transform:scale(1.04); }
+  .btn-spin:disabled { opacity:0.4; cursor:default; transform:none; }
+  .wheel-result {
+    font-family:'Oswald',sans-serif; font-size:1.5rem; font-weight:700;
+    color:#e8b84b; letter-spacing:2px; text-align:center; min-height:2rem;
+    text-shadow:0 0 20px rgba(232,184,75,0.5);
+  }
+  .keep-replace-row {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
+    background:#0d0d22; border:1px solid #c8972a44; border-radius:10px; padding:10px 16px;
+    animation:winnerIn 0.3s ease;
+  }
+  .keep-label { font-family:'Oswald',sans-serif; font-size:0.9rem; color:#f5f0e8; letter-spacing:1px; }
+  .keep-label strong { color:#e8b84b; }
+  .btn-keep {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.8rem; letter-spacing:1px;
+    padding:8px 18px; border-radius:50px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#1a6b3c,#2a9d5c); color:#fff; transition:all 0.15s;
+  }
+  .btn-keep:hover { box-shadow:0 0 14px rgba(42,157,92,0.6); }
+  .btn-replace {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.8rem; letter-spacing:1px;
+    padding:8px 18px; border-radius:50px; border:2px solid #c8972a44; cursor:pointer;
+    background:transparent; color:#c8972a; transition:all 0.15s;
+  }
+  .btn-replace:hover { border-color:#c8972a; background:#c8972a22; }
+  .btn-custom {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.8rem; letter-spacing:1px;
+    padding:8px 18px; border-radius:50px; border:2px solid #ffffff22; cursor:pointer;
+    background:transparent; color:#ffffff66; transition:all 0.15s;
+  }
+  .btn-custom:hover { border-color:#ffffff55; color:#fff; }
+  .custom-reward-row {
+    display:flex; gap:8px; align-items:center; width:100%; margin-top:6px;
+  }
+  .custom-reward-row input {
+    font-family:'Oswald',sans-serif; font-size:0.9rem; font-weight:700;
+    background:#0d0d22; border:2px solid #c8972a44; border-radius:8px;
+    color:#e8b84b; padding:8px 12px; outline:none; flex:1; letter-spacing:1px;
+  }
+  .custom-reward-row input:focus { border-color:#c8972a; }
+  .wheel-close {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.8rem;
+    letter-spacing:2px; padding:8px 28px; border-radius:50px;
+    cursor:pointer; background:transparent; color:#c8972a44;
+    border:2px solid #c8972a22; transition:all 0.15s;
+  }
+  .wheel-close:hover { border-color:#c8972a; color:#c8972a; }
+  .btn-edit-wheel {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.8rem;
+    letter-spacing:2px; padding:8px 20px; border-radius:50px;
+    cursor:pointer; background:transparent; color:#c8972a44;
+    border:2px solid #c8972a22; transition:all 0.15s;
+  }
+  .btn-edit-wheel:hover { border-color:#c8972a; color:#c8972a; }
+  .segment-row {
+    display:flex; align-items:center; gap:8px;
+    background:#0d0d22; border-radius:8px; padding:6px 10px;
+  }
+  .segment-color { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .segment-name {
+    font-family:'Oswald',sans-serif; font-size:0.85rem; font-weight:700;
+    color:#f5f0e8; flex:1; letter-spacing:1px;
+  }
+  .segment-name.spin-again { color:#c8972a88; font-style:italic; }
+  .btn-del {
+    font-size:0.75rem; padding:3px 8px; border-radius:6px; border:none;
+    cursor:pointer; background:#b2223422; color:#b22234;
+    font-family:'Oswald',sans-serif; font-weight:700; transition:all 0.15s;
+    flex-shrink:0;
+  }
+  .btn-del:hover { background:#b22234; color:#fff; }
+
+  /* ── Winner display on main screen ── */
+  .winner-banner {
+    display:none; background:#14142a; border:2px solid #c8972a;
+    border-radius:12px; padding:12px 32px; text-align:center;
+    box-shadow:0 0 24px rgba(200,151,42,0.3);
+  }
+  .winner-banner.show { display:block; animation:winnerIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes winnerIn { from { transform:scale(0.7); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .winner-label { font-size:0.52rem; color:#c8972a; letter-spacing:5px; font-weight:700; margin-bottom:3px; }
+  .winner-name  { font-family:'Oswald',sans-serif; font-size:2rem; font-weight:700;
+    color:#e8b84b; text-shadow:0 0 20px rgba(232,184,75,0.6); letter-spacing:2px; }
+
+  /* ── PBS Focus chip ── */
+  .focus-banner {
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    text-align:center; width:100%; max-width:600px;
+  }
+  .focus-label {
+    font-family:'Oswald',sans-serif; font-size:0.7rem; letter-spacing:6px;
+    color:#c8972a; font-weight:700;
+  }
+  .focus-text {
+    font-family:'Oswald',sans-serif; font-size:2.8rem; font-weight:700;
+    color:#f5f0e8; letter-spacing:3px; line-height:1.1;
+    text-shadow:0 0 20px rgba(245,240,232,0.15);
+    background: linear-gradient(135deg,#14142a,#1e1e3a);
+    border:2px solid #c8972a44; border-radius:14px;
+    padding:12px 40px; min-width:200px;
+    transition: border-color 0.3s;
+  }
+  .focus-text.loaded {
+    border-color:#c8972a;
+    box-shadow: 0 0 20px rgba(200,151,42,0.2);
+  }
+  .focus-text em {
+    color:#e8b84b; font-style:normal;
+    text-shadow:0 0 20px rgba(232,184,75,0.5);
+  }
+  .sheets-row {
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:100%; max-width:520px;
+  }
+  .sheets-inner {
+    display:flex; align-items:center; gap:8px; width:100%;
+    background:#0d0d22; border:2px solid #c8972a33; border-radius:10px;
+    padding:8px 12px;
+  }
+  .sheets-inner:focus-within { border-color:#c8972a88; }
+  .sheets-icon { font-size:1.1rem; flex-shrink:0; }
+  .sheets-inner input {
+    font-family:'Montserrat',sans-serif; font-size:0.75rem;
+    background:transparent; border:none; outline:none;
+    color:#c8972a; flex:1; letter-spacing:0.5px; min-width:0;
+  }
+  .sheets-inner input::placeholder { color:#c8972a44; }
+  .btn-fetch {
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:0.75rem;
+    letter-spacing:2px; padding:6px 16px; border-radius:20px; border:none;
+    cursor:pointer; background:linear-gradient(135deg,#5a3800,#c8972a);
+    color:#f5f0e8; transition:all 0.15s; flex-shrink:0;
+  }
+  .btn-fetch:hover { box-shadow:0 0 12px rgba(200,151,42,0.5); }
+  .btn-fetch:disabled { opacity:0.4; cursor:default; }
+  .sheets-status { font-size:0.9rem; flex-shrink:0; min-width:16px; }
+  .sheets-hint { font-size:0.58rem; color:#c8972a55; letter-spacing:1px; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="wheel-overlay" id="wheelOverlay">
+  <div class="wheel-box">
+    <div class="wheel-title">🏆 MILESTONE! SPIN TO WIN 🏆</div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheelCanvas" width="420" height="420"></canvas>
+    </div>
+    <div class="wheel-result" id="wheelResult">&nbsp;</div>
+    <div class="keep-replace-row" id="keepReplaceRow" style="display:none">
+      <span class="keep-label">🏆 <strong id="keepReplaceReward"></strong></span>
+      <button class="btn-keep" onclick="keepReward()">✅ Keep</button>
+      <button class="btn-replace" onclick="cutReward()">✂️ Cut</button>
+      <div class="custom-reward-row" id="customRewardRow" style="display:none">
+        <input type="text" id="customRewardInput" placeholder="New reward…" maxlength="40"
+               onkeydown="if(event.key==='Enter') confirmCustomReward()">
+        <button class="btn-keep" onclick="confirmCustomReward()">✅ Set</button>
+      </div>
+    </div>
+    <button class="btn-spin" id="spinBtn" onclick="spinWheel()">🎡 &nbsp;SPIN</button>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="wheel-close" onclick="closeWheel()">✕ &nbsp;CLOSE</button>
+      <button class="btn-edit-wheel" id="editWheelBtn" onclick="toggleEditWheel()">✏️ &nbsp;EDIT</button>
+    </div>
+
+    <!-- Edit panel -->
+    <div id="editWheelPanel" style="display:none;width:100%;max-width:420px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:0.65rem;letter-spacing:4px;color:#c8972a88;margin-bottom:8px;">WHEEL ITEMS</div>
+      <div id="segmentList" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="editNewReward" placeholder="Add new reward…" maxlength="40"
+               style="font-family:'Oswald',sans-serif;font-size:0.85rem;font-weight:700;background:#0d0d22;border:2px solid #c8972a44;border-radius:8px;color:#e8b84b;padding:8px 12px;outline:none;flex:1;letter-spacing:1px;"
+               onkeydown="if(event.key==='Enter') addRewardFromEdit()">
+        <button onclick="addRewardFromEdit()" style="font-family:'Oswald',sans-serif;font-weight:700;font-size:0.8rem;letter-spacing:1px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(135deg,#1a6b3c,#2a9d5c);color:#fff;">+ Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="winner-banner" id="winnerBanner">
+  <div class="winner-label">🎡 WHEEL WINNER</div>
+  <div class="winner-name" id="winnerName"></div>
+</div>
+
+<div class="history-log" id="historyLog">
+  <div class="history-title">🏅 RECENT WINNERS</div>
+  <div id="historyItems"></div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>Reset score to <span>zero</span>?</p>
+    <div class="confirm-actions">
+      <button class="btn-confirm-yes" onclick="doReset()">Yes, Reset</button>
+      <button class="btn-confirm-no" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <img src="data:image/jpeg;base64,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" alt="Yarralinka Primary">
+  <div>
+    <h1>CLASS <span>POINTS</span></h1>
+    <p>PBS · POSITIVE BEHAVIOUR FOR LEARNING</p>
+  </div>
+</header>
+
+<div class="focus-banner" id="focusBanner">
+  <div class="focus-label">THIS WEEK'S PBS FOCUS</div>
+  <div class="focus-text" id="focusText" style="color:#c8972a33;">— — —</div>
+</div>
+
+<div class="card">
+  <div class="card-label">TOTAL</div>
+
+  <div class="mask-wrap" id="maskWrap">
+    <input type="number" id="scoreInput" placeholder="" min="0"
+           oninput="updateStars(); updateProgress();">
+    <div class="stars" id="stars">●</div>
+  </div>
+  <div class="score" id="scoreDisplay">0</div>
+
+  <!-- Progress bar -->
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div class="progress-labels">
+      <span id="progressFrom">0</span>
+      <span class="next-label" id="progressNext">Next goal: 100 pts</span>
+      <span id="progressTo">100</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Google Sheets connector -->
+<div class="sheets-row" id="sheetsRow">
+  <div class="sheets-inner" id="sheetsInner">
+    <span class="sheets-icon">📊</span>
+    <input type="text" id="sheetsUrl" placeholder="Paste Google Sheets share link…"
+           onkeydown="if(event.key==='Enter') fetchFromSheets()">
+    <button class="btn-fetch" onclick="fetchFromSheets()" id="fetchBtn">Load</button>
+    <span class="sheets-status" id="sheetsStatus"></span>
+  </div>
+  <div class="sheets-hint" id="sheetsHint">
+    Share your sheet (View only) → paste the link above → score auto-fills from cell C6
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="btn-reveal" id="revealBtn" onclick="reveal()">&#127908;&nbsp; REVEAL</button>
+  <button class="btn-reset" onclick="openConfirm()">&#8635; Reset</button>
+  <button class="btn-reset" onclick="openAddReward()" style="border-color:#c8972a44; color:#c8972a88;">&#43; Reward</button>
+  <button class="btn-reset" onclick="openWheel()" style="border-color:#c8972a44; color:#c8972a88;">&#127921; Wheel</button>
+</div>
+
+<!-- Add reward overlay -->
+<div class="confirm-overlay" id="addRewardOverlay">
+  <div class="confirm-box">
+    <p>Add a <span>new reward</span> to the wheel</p>
+    <input type="text" id="newRewardInput" placeholder="Reward name…" maxlength="40"
+           style="font-family:'Oswald',sans-serif;font-size:1rem;font-weight:700;background:#0d0d22;border:2px solid #c8972a44;border-radius:8px;color:#e8b84b;padding:10px 14px;outline:none;width:100%;letter-spacing:1px;margin-bottom:14px;"
+           onkeydown="if(event.key==='Enter') confirmAddReward()">
+    <div class="confirm-actions">
+      <button class="btn-confirm-yes" onclick="confirmAddReward()">Add to Wheel</button>
+      <button class="btn-confirm-no" onclick="closeAddReward()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  const scoreInput   = document.getElementById('scoreInput');
+  const starsEl      = document.getElementById('stars');
+  const maskWrap     = document.getElementById('maskWrap');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const revealBtn    = document.getElementById('revealBtn');
+  const progressFill = document.getElementById('progressFill');
+  const progressFrom = document.getElementById('progressFrom');
+  const progressTo   = document.getElementById('progressTo');
+  const progressNext = document.getElementById('progressNext');
+
+  /* ── Sound engine (Web Audio API — no files needed) ── */
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playTone(freq, type, startTime, duration, gainVal=0.3) {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(gainVal, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.start(startTime); osc.stop(startTime + duration);
+  }
+
+  function playDrumRoll(duration=4.5) {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    let t = now;
+    let interval = 0.18;
+    while (t < now + duration) {
+      // Snare-like burst: noise via sawtooth
+      playTone(180 + Math.random()*40, 'sawtooth', t, 0.04, 0.12);
+      playTone(90,  'square',   t, 0.04, 0.08);
+      t += interval;
+      interval = Math.max(0.04, interval * 0.97); // accelerate
+    }
+  }
+
+  function playFanfare() {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    // triumphant rising arpeggio
+    const notes = [523, 659, 784, 1047, 1319];
+    notes.forEach((f, i) => {
+      playTone(f, 'triangle', now + i * 0.12, 0.35, 0.25);
+    });
+    // bass hit
+    playTone(130, 'sine', now, 0.4, 0.3);
+    setTimeout(() => playTone(196, 'sine', getAudioCtx().currentTime, 0.5, 0.25), 600);
+  }
+
+  function playRevealSound() {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [200, 400, 600, 800].forEach((f, i) => playTone(f, 'sine', now + i * 0.07, 0.2, 0.2));
+  }
+
+  function playMilestoneSound() {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    // Mario level complete jingle — iconic 6-note sequence
+    // Notes: G5, C6, E6, G6, E6, G6 with specific timing
+    const notes = [
+      { freq: 784,  t: 0.00, dur: 0.12 },  // G5
+      { freq: 1047, t: 0.14, dur: 0.12 },  // C6
+      { freq: 1319, t: 0.28, dur: 0.12 },  // E6
+      { freq: 1568, t: 0.42, dur: 0.30 },  // G6 (held)
+      { freq: 1319, t: 0.46, dur: 0.12 },  // E6
+      { freq: 1568, t: 0.60, dur: 0.55 },  // G6 (long hold)
+    ];
+
+    notes.forEach(({ freq, t, dur }) => {
+      // Square wave for that retro 8-bit feel
+      playTone(freq, 'square', now + t, dur, 0.22);
+      // Slight triangle overtone for body
+      playTone(freq * 2, 'triangle', now + t, dur * 0.6, 0.06);
+    });
+
+    // Bass hit on the final note
+    playTone(196, 'sine', now + 0.60, 0.55, 0.28);
+    playTone(130, 'sine', now + 0.60, 0.30, 0.18);
+  }
+
+  function playWinSound() {
+    playFanfare();
+  }
+
+  let drumRollTimeout = null;
+  function startDrumRoll(duration) {
+    playDrumRoll(duration / 1000);
+  }
+
+  /* ── History log ── */
+  const HISTORY_KEY = 'pbs_reward_history';
+  let rewardHistory = [];
+
+  // Restore from localStorage on load
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    if (Array.isArray(saved)) rewardHistory = saved;
+  } catch(e) {}
+  renderHistory();
+
+  function addToHistory(reward) {
+    const now = new Date();
+    const date = now.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit' });
+    rewardHistory.unshift({ reward, time: date });
+    if (rewardHistory.length > 5) rewardHistory.pop();
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(rewardHistory)); } catch(e) {}
+    syncWinnersToSheet();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('historyItems');
+    const log = document.getElementById('historyLog');
+    if (!rewardHistory.length) { log.classList.remove('show'); return; }
+    log.classList.add('show');
+    container.innerHTML = rewardHistory.map(h =>
+      `<div class="history-item">
+        <span class="hist-reward">🏆 ${h.reward}</span>
+        <span class="hist-meta">${h.time}</span>
+      </div>`
+    ).join('');
+  }
+
+  /* ── Score pulse on count-up ticks ── */
+  function pulseScore() {
+    scoreDisplay.classList.remove('pulse');
+    void scoreDisplay.offsetWidth;
+    scoreDisplay.classList.add('pulse');
+    scoreDisplay.addEventListener('animationend', () => scoreDisplay.classList.remove('pulse'), {once:true});
+  }
+
+  let revealed = false, animating = false;
+  // tracks the displayed value on the PREVIOUS tick — used to detect milestone crossings
+  let lastDisplayed = 0;
+
+  /* ── Rolling number mask (replaces dots) ── */
+  let rollingInterval = null;
+
+  function startRolling() {
+    if (rollingInterval) return;
+    const digits = Math.max(1, scoreInput.value.length || 1);
+    scoreInput.style.width = Math.max(digits, 1) + 'ch';
+    rollingInterval = setInterval(() => {
+      // Show random number with same digit count as the real score
+      const max = Math.pow(10, digits);
+      const fake = Math.floor(Math.random() * max);
+      starsEl.textContent = String(fake).padStart(digits, '0');
+    }, 80);
+  }
+
+  function stopRolling() {
+    if (rollingInterval) { clearInterval(rollingInterval); rollingInterval = null; }
+    starsEl.textContent = '';
+  }
+
+  function updateStars() {
+    const val = scoreInput.value;
+    const digits = Math.max(val.length, 1);
+    scoreInput.style.width = digits + 'ch';
+    if (val.length > 0 && !rollingInterval) startRolling();
+    else if (val.length === 0) stopRolling();
+  }
+  updateStars();
+  scoreInput.addEventListener('keydown', e => { if (e.key === 'Enter') reveal(); });
+
+  function getScore() { return Math.max(0, parseInt(scoreInput.value) || 0); }
+
+  /* ── Milestones — next thousand above current score ── */
+  const MILESTONE_STEP = 1000;
+  let   nextMilestone  = 1000;
+  let   wheelPending   = false; // prevents count-up from continuing while wheel is open
+
+  function calcFirstMilestone(score) {
+    // The single milestone we care about this session: the next clean thousand above the score
+    return Math.floor(score / MILESTONE_STEP) * MILESTONE_STEP + MILESTONE_STEP;
+  }
+
+  function updateNextGoalChip() { /* chip removed — no-op */ }
+
+  // Only fire if the count-up crosses exactly nextMilestone
+  // (nextMilestone is set to the thousand just above the revealed score,
+  //  so we never fire for milestones the class has already passed)
+  function checkMilestoneCrossings(prev, current) {
+    if (prev < nextMilestone && current >= nextMilestone) {
+      milestoneParty(nextMilestone);
+      nextMilestone += MILESTONE_STEP;
+    }
+  }
+
+  /* ── Progress bar ── */
+  function updateProgress(s) {
+    const prevGoal = nextMilestone - MILESTONE_STEP;
+    const pct      = Math.min(100, Math.max(0, ((s - prevGoal) / MILESTONE_STEP) * 100));
+
+    progressFill.classList.remove('full');
+    progressFill.style.width = pct + '%';
+    progressFrom.textContent = prevGoal.toLocaleString();
+    progressTo.textContent   = nextMilestone.toLocaleString();
+    progressNext.textContent = 'Next goal: ' + nextMilestone.toLocaleString() + ' pts';
+
+    if (pct >= 100) progressFill.classList.add('full');
+  }
+
+  /* ── Score log (localStorage) ── */
+  const SCORE_LOG_KEY = 'pbs_score_log';
+
+  function getLastScore() {
+    try {
+      const log = JSON.parse(localStorage.getItem(SCORE_LOG_KEY) || '[]');
+      return log.length ? log[log.length - 1].score : 0;
+    } catch(e) { return 0; }
+  }
+
+  function logScore(score) {
+    try {
+      const log = JSON.parse(localStorage.getItem(SCORE_LOG_KEY) || '[]');
+      log.push({ score, date: new Date().toISOString() });
+      // Keep last 365 entries
+      if (log.length > 365) log.splice(0, log.length - 365);
+      localStorage.setItem(SCORE_LOG_KEY, JSON.stringify(log));
+    } catch(e) {}
+  }
+
+  /* ── Reveal ── */
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    const target = getScore();
+    const lastScore = getLastScore();
+    lastDisplayed = lastScore;
+    // If no previous score: count-up goes 0→target, no milestones should fire
+    // (class hasn't earned them yet — this is just the opening reveal)
+    // If previous score exists: count-up goes lastScore→target, fire for
+    // any thousand crossed between the two
+    nextMilestone = lastScore > 0
+      ? calcFirstMilestone(lastScore)
+      : calcFirstMilestone(target);
+    stopRolling();
+    maskWrap.style.display = 'none';
+    scoreDisplay.style.display = 'block';
+    document.getElementById('progressWrap').style.display = 'block';
+    revealBtn.classList.add('done');
+    revealBtn.innerHTML = '&#10003;&nbsp; REVEALED';
+    revealBtn.disabled = true;
+    playRevealSound();
+    countUp(lastScore, target, 2200, lastScore === 0);
+  }
+
+  function countUp(from, to, dur, gameshow=false) {
+    if (animating) return;
+    animating = true;
+    const t0 = performance.now();
+    // Always use gameshow roll for drama — regardless of from value
+    const useGameshow = true;
+    (function tick(now) {
+      // Pause ticking while wheel is showing
+      if (wheelPending) {
+        setTimeout(() => requestAnimationFrame(tick), 200);
+        return;
+      }
+      const p = Math.min((now - t0) / dur, 1);
+      let v;
+      if (useGameshow && p < 0.65) {
+        // Slot-machine phase: rapid numbers between from and to+range, speeding up then slowing
+        const range = to - from;
+        const fakeMin = from;
+        const fakeMax = to + Math.max(range * 0.5, 500);
+        v = Math.floor(fakeMin + Math.random() * (fakeMax - fakeMin));
+        scoreDisplay.textContent = v.toLocaleString();
+        // Start fast, slow down toward end of slot phase
+        const delay = 30 + Math.floor(p * 60);
+        setTimeout(() => requestAnimationFrame(tick), delay);
+      } else {
+        // Count-up phase: ease out from → to
+        const q = useGameshow ? (p - 0.65) / 0.35 : p;
+        v = Math.floor(from + (to - from) * (1 - Math.pow(1 - Math.min(q, 1), 3)));
+        checkMilestoneCrossings(lastDisplayed, v);
+        lastDisplayed = v;
+        scoreDisplay.textContent = v.toLocaleString();
+        pulseScore();
+        updateProgress(v);
+        if (p < 1) {
+          setTimeout(() => requestAnimationFrame(tick), 14);
+        } else {
+          scoreDisplay.textContent = to.toLocaleString();
+          animating = false;
+          scoreDisplay.classList.remove('pop'); void scoreDisplay.offsetWidth;
+          scoreDisplay.classList.add('pop');
+          scoreDisplay.addEventListener('animationend', () => scoreDisplay.classList.remove('pop'), {once:true});
+          playFanfare();
+          fireConfetti();
+          updateProgress(to);
+          logScore(to);
+        }
+      }
+    })(performance.now());
+  }
+
+  /* ── Reset ── */
+  function openConfirm() { document.getElementById('confirmOverlay').classList.add('show'); }
+  function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+  function doReset() {
+    closeConfirm();
+    revealed = false; animating = false; lastDisplayed = 0;
+    nextMilestone = MILESTONE_STEP;
+    localStorage.removeItem(SCORE_LOG_KEY);
+    localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem('pbs_focus');
+    document.getElementById('focusText').innerHTML = '— — —';
+    document.getElementById('focusText').style.color = '#c8972a33';
+    document.getElementById('focusText').classList.remove('loaded');
+    rewardHistory = [];
+    renderHistory();
+    syncWinnersToSheet();
+    document.getElementById('sheetsRow').style.display = 'flex';
+    document.getElementById('sheetsHint').textContent =
+      localStorage.getItem(SHEETS_KEY)
+        ? 'Saved ✓ — click Load to pull today\'s score'
+        : 'Share your sheet (View only) → paste the link above → score auto-fills from cell C6';
+    stopRolling();
+    scoreInput.value = '';
+    scoreDisplay.style.display = 'none';
+    scoreDisplay.textContent = '0';
+    document.getElementById('progressWrap').style.display = 'none';
+    maskWrap.style.display = 'inline-flex';
+    revealBtn.classList.remove('done');
+    revealBtn.innerHTML = '&#127908;&nbsp; REVEAL';
+    revealBtn.disabled = false;
+    updateStars();
+  }
+
+  /* ── Built-in Spin Wheel ── */
+  const SEGMENTS = [
+    { label: 'Behind the News',         color: '#b22234' },
+    { label: 'Extra Fitness',           color: '#c8972a' },
+    { label: 'Dojo Island',             color: '#1a6b3c' },
+    { label: 'VR Excursion',            color: '#1a3a6b' },
+    { label: '🎡 Spin Again',           color: '#6b1a6b', spinAgain: true },
+    { label: 'iPad Daily Reviews',      color: '#8b0000' },
+    { label: 'Airplane Competition',    color: '#0d5c63' },
+    { label: 'Art Gallery',             color: '#5a3800' },
+    { label: '🎡 Spin Again',           color: '#3d3d3d', spinAgain: true },
+  ];
+
+  const wCanvas = document.getElementById('wheelCanvas');
+  const wCtx    = wCanvas.getContext('2d');
+  const CX = wCanvas.width / 2, CY = wCanvas.height / 2, R = CX - 8;
+  let wheelAngle = 0, spinning = false;
+
+  function getARC() { return (2 * Math.PI) / SEGMENTS.length; }
+
+  function drawWheel(angle) {
+    const ARC = getARC();
+    wCtx.clearRect(0, 0, wCanvas.width, wCanvas.height);
+    SEGMENTS.forEach((seg, i) => {
+      const start = angle + i * ARC;
+      const end   = start + ARC;
+      // Slice
+      wCtx.beginPath();
+      wCtx.moveTo(CX, CY);
+      wCtx.arc(CX, CY, R, start, end);
+      wCtx.closePath();
+      wCtx.fillStyle = seg.color;
+      wCtx.fill();
+      wCtx.strokeStyle = '#1a1a2e';
+      wCtx.lineWidth = 2;
+      wCtx.stroke();
+      // Label
+      wCtx.save();
+      wCtx.translate(CX, CY);
+      wCtx.rotate(start + ARC / 2);
+      wCtx.textAlign = 'right';
+      wCtx.fillStyle = '#fff';
+      wCtx.font = 'bold 13px Montserrat, sans-serif';
+      wCtx.shadowColor = 'rgba(0,0,0,0.7)';
+      wCtx.shadowBlur = 3;
+      // Wrap long labels
+      const words = seg.label.split(' ');
+      if (words.length <= 2) {
+        wCtx.fillText(seg.label, R - 12, 5);
+      } else {
+        const mid = Math.ceil(words.length / 2);
+        wCtx.fillText(words.slice(0, mid).join(' '), R - 12, -4);
+        wCtx.fillText(words.slice(mid).join(' '), R - 12, 12);
+      }
+      wCtx.restore();
+    });
+    // Centre circle
+    wCtx.beginPath();
+    wCtx.arc(CX, CY, 22, 0, 2 * Math.PI);
+    wCtx.fillStyle = '#e8b84b';
+    wCtx.fill();
+    wCtx.strokeStyle = '#1a1a2e';
+    wCtx.lineWidth = 3;
+    wCtx.stroke();
+  }
+
+  drawWheel(wheelAngle);
+
+  /* ── Crypto random helpers ── */
+  function cryptoRandom() {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] / (0xFFFFFFFF + 1);
+  }
+  function cryptoRandomInt(max) {
+    // Unbiased integer in [0, max)
+    const limit = Math.floor(0x100000000 / max) * max;
+    let r;
+    do { const a = new Uint32Array(1); crypto.getRandomValues(a); r = a[0]; } while (r >= limit);
+    return r % max;
+  }
+
+  function openWheel() {
+    wheelPending = true;
+    document.getElementById('wheelResult').innerHTML = '&nbsp;';
+    document.getElementById('keepReplaceRow').style.display = 'none';
+    document.getElementById('customRewardRow').style.display = 'none';
+    document.getElementById('customRewardInput').value = '';
+    document.getElementById('spinBtn').disabled = false;
+    document.getElementById('wheelOverlay').classList.add('show');
+    drawWheel(wheelAngle);
+  }
+  function closeWheel() {
+    wheelPending = false;
+    document.getElementById('wheelOverlay').classList.remove('show');
+    document.getElementById('editWheelPanel').style.display = 'none';
+    document.getElementById('editWheelBtn').textContent = '✏️ EDIT';
+  }
+
+  function spinWheel() {
+    if (spinning) return;
+    spinning = true;
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('wheelResult').innerHTML = '&nbsp;';
+    document.getElementById('keepReplaceRow').style.display = 'none';
+    document.getElementById('customRewardRow').style.display = 'none';
+
+    // Use crypto randomness to pick segment
+    const targetIdx = cryptoRandomInt(SEGMENTS.length);
+
+    // Crypto random extra spins (5–9) and jitter
+    const ARC        = getARC();
+    const extraSpins = 5 + cryptoRandomInt(5);
+    const jitter     = (cryptoRandom() - 0.5) * ARC * 0.6;
+    const normAngle  = ((wheelAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const segMid     = targetIdx * ARC + ARC / 2 + jitter;
+    const spinDelta  = extraSpins * 2 * Math.PI + ((- Math.PI / 2 - normAngle - segMid) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+
+    // Crypto random duration (4000–5500ms)
+    const duration   = 4000 + cryptoRandom() * 1500;
+    startDrumRoll(duration);
+    const startAngle = wheelAngle;
+    const t0         = performance.now();
+
+    (function animate(now) {
+      const elapsed  = now - t0;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3);
+      wheelAngle     = startAngle + spinDelta * eased;
+      drawWheel(wheelAngle);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        spinning = false;
+        const landed = SEGMENTS[targetIdx];
+        if (landed.spinAgain) {
+          document.getElementById('wheelResult').textContent = '🎡 Spin Again!';
+          document.getElementById('spinBtn').disabled = false;
+          setTimeout(() => spinWheel(), 900);
+        } else {
+          document.getElementById('wheelResult').textContent = '🏆 ' + landed.label + '!';
+          document.getElementById('keepReplaceReward').textContent = landed.label;
+          document.getElementById('keepReplaceRow').style.display = 'flex';
+          pendingReward = landed.label;
+          playWinSound();
+        }
+      }
+    })(performance.now());
+  }
+
+  let pendingReward = '';
+
+  function keepReward() {
+    showWinner(pendingReward);
+    closeWheel();
+  }
+
+  function cutReward() {
+    document.getElementById('customRewardRow').style.display = 'flex';
+    setTimeout(() => document.getElementById('customRewardInput').focus(), 50);
+  }
+
+  function confirmCustomReward() {
+    const val = document.getElementById('customRewardInput').value.trim();
+    if (!val) return;
+    document.getElementById('customRewardInput').value = '';
+    document.getElementById('customRewardRow').style.display = 'none';
+    showWinner(val);
+    closeWheel();
+  }
+
+  function showWinner(name) {
+    addToHistory(name);
+    const banner = document.getElementById('winnerBanner');
+    document.getElementById('winnerName').textContent = name;
+    banner.classList.remove('show');
+    void banner.offsetWidth;
+    banner.classList.add('show');
+  }
+
+  /* ── Edit wheel ── */
+  function toggleEditWheel() {
+    const panel = document.getElementById('editWheelPanel');
+    const btn   = document.getElementById('editWheelBtn');
+    const open  = panel.style.display === 'none';
+    panel.style.display = open ? 'block' : 'none';
+    btn.textContent = open ? '✕ DONE' : '✏️ EDIT';
+    if (open) renderSegmentList();
+  }
+
+  function renderSegmentList() {
+    const list = document.getElementById('segmentList');
+    list.innerHTML = SEGMENTS.map((seg, i) =>
+      `<div class="segment-row">
+        <div class="segment-color" style="background:${seg.color}"></div>
+        <span class="segment-name${seg.spinAgain ? ' spin-again' : ''}">${seg.label}</span>
+        <button class="btn-del" onclick="deleteSegment(${i})">✕</button>
+      </div>`
+    ).join('');
+  }
+
+  function deleteSegment(i) {
+    if (SEGMENTS.length <= 2) return; // keep at least 2
+    SEGMENTS.splice(i, 1);
+    drawWheel(wheelAngle);
+    renderSegmentList();
+  }
+
+  function addRewardFromEdit() {
+    const input = document.getElementById('editNewReward');
+    const val = input.value.trim();
+    if (!val) return;
+    const color = REWARD_COLORS[SEGMENTS.length % REWARD_COLORS.length];
+    SEGMENTS.push({ label: val, color });
+    input.value = '';
+    drawWheel(wheelAngle);
+    renderSegmentList();
+  }
+  const REWARD_COLORS = ['#b22234','#c8972a','#1a6b3c','#1a3a6b','#8b0000','#0d5c63','#5a3800','#6b3d00','#3d006b','#006b5a'];
+  function openAddReward() {
+    document.getElementById('newRewardInput').value = '';
+    document.getElementById('addRewardOverlay').classList.add('show');
+    setTimeout(() => document.getElementById('newRewardInput').focus(), 100);
+  }
+  function closeAddReward() {
+    document.getElementById('addRewardOverlay').classList.remove('show');
+  }
+  function confirmAddReward() {
+    const val = document.getElementById('newRewardInput').value.trim();
+    if (!val) return;
+    const color = REWARD_COLORS[SEGMENTS.length % REWARD_COLORS.length];
+    SEGMENTS.push({ label: val, color });
+    drawWheel(wheelAngle);
+    closeAddReward();
+  }
+
+  /* ── Milestone party ── */
+  function milestoneParty(goal) {
+    // 1. Sound
+    playMilestoneSound();
+    // 2. Explosion of confetti from centre
+    fireConfetti(300, true);
+
+    // 2. Flash card gold
+    const card = document.querySelector('.card');
+    card.style.transition = 'box-shadow 0.1s';
+    card.style.boxShadow = '0 0 80px rgba(232,184,75,0.95), 0 0 160px rgba(232,184,75,0.4)';
+    setTimeout(() => { card.style.boxShadow = '0 0 40px rgba(200,151,42,0.22)'; }, 800);
+
+    // 3. Pop-up banner
+    const banner = document.createElement('div');
+    banner.innerHTML = '🏆 ' + goal.toLocaleString() + ' POINTS! 🏆';
+    Object.assign(banner.style, {
+      position:'fixed', top:'50%', left:'50%',
+      transform:'translate(-50%,-50%) scale(0.4)',
+      fontFamily:"'Oswald',sans-serif", fontWeight:'700',
+      fontSize:'clamp(2rem,6vw,3.8rem)', letterSpacing:'4px',
+      color:'#1a1a2e', background:'linear-gradient(135deg,#c8972a,#e8b84b)',
+      padding:'24px 48px', borderRadius:'16px',
+      boxShadow:'0 0 60px rgba(232,184,75,0.8)',
+      zIndex:'500', opacity:'0',
+      transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s',
+      whiteSpace:'nowrap', pointerEvents:'none',
+    });
+    document.body.appendChild(banner);
+    requestAnimationFrame(() => {
+      banner.style.opacity = '1';
+      banner.style.transform = 'translate(-50%,-50%) scale(1)';
+    });
+    setTimeout(() => {
+      banner.style.opacity = '0';
+      banner.style.transform = 'translate(-50%,-60%) scale(0.85)';
+      setTimeout(() => { banner.remove(); openWheel(); }, 400);
+    }, 3000);
+  }
+
+  /* ── Confetti ── */
+  const cv = document.getElementById('confetti'), cx = cv.getContext('2d');
+  let parts = [];
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  addEventListener('resize', resize); resize();
+
+  function fireConfetti(count=120, fromCenter=false) {
+    const cols = ['#b22234','#c8972a','#e8b84b','#f5f0e8','#fff','#8b0000'];
+    for (let i=0; i<count; i++) {
+      const cx2 = fromCenter ? cv.width/2 + (Math.random()-0.5)*200 : Math.random()*cv.width;
+      const cy2 = fromCenter ? cv.height/2 + (Math.random()-0.5)*80  : -10;
+      const spd  = fromCenter ? Math.random()*16+6 : Math.random()*4+2;
+      const ang  = fromCenter ? Math.random()*Math.PI*2 : Math.PI/2;
+      parts.push({
+        x:cx2, y:cy2,
+        w:Math.random()*10+4, h:Math.random()*5+3,
+        c:cols[Math.floor(Math.random()*cols.length)],
+        vx: fromCenter ? Math.cos(ang)*spd : (Math.random()-.5)*6,
+        vy: fromCenter ? Math.sin(ang)*spd : Math.random()*4+2,
+        r:Math.random()*360, rv:(Math.random()-.5)*8, op:1
+      });
+    }
+    requestAnimationFrame(draw);
+  }
+  function draw() {
+    cx.clearRect(0,0,cv.width,cv.height);
+    parts = parts.filter(p=>p.op>.05);
+    parts.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.12; p.r+=p.rv;
+      if (p.y>cv.height*.82) p.op-=.025;
+      cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r*Math.PI/180);
+      cx.globalAlpha=p.op; cx.fillStyle=p.c;
+      cx.fillRect(-p.w/2,-p.h/2,p.w,p.h); cx.restore();
+    });
+    if (parts.length) requestAnimationFrame(draw);
+  }
+
+  /* ── Google Sheets sync ── */
+  const SHEETS_KEY = 'pbs_sheets_url';
+
+  function getSheetsUrl() { return localStorage.getItem(SHEETS_KEY) || ''; }
+
+  // POST winners array back to the sheet
+  async function syncWinnersToSheet() {
+    const url = getSheetsUrl();
+    if (!url) return;
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ winners: rewardHistory }),
+        headers: { 'Content-Type': 'text/plain' } // Apps Script needs text/plain for doPost
+      });
+    } catch(e) { console.warn('Winners sync failed:', e); }
+  }
+
+  // On page load: restore last score + winners from sheet if URL saved, else from localStorage
+  (function initOnLoad() {
+    const savedUrl = localStorage.getItem(SHEETS_KEY);
+    if (savedUrl) {
+      document.getElementById('sheetsUrl').value = savedUrl;
+    }
+
+    const lastScore = getLastScore();
+    if (lastScore > 0) {
+      revealed = true;
+      lastDisplayed = lastScore;
+      nextMilestone = calcFirstMilestone(lastScore);
+      scoreInput.value = lastScore;
+      updateStars();
+      maskWrap.style.display = 'none';
+      scoreDisplay.style.display = 'block';
+      scoreDisplay.textContent = lastScore.toLocaleString();
+      document.getElementById('progressWrap').style.display = 'block';
+      updateProgress(lastScore);
+      revealBtn.classList.add('done');
+      revealBtn.innerHTML = '&#10003;&nbsp; REVEALED';
+      revealBtn.disabled = true;
+      document.getElementById('sheetsRow').style.display = 'flex';
+      document.getElementById('sheetsHint').textContent =
+        savedUrl
+          ? `Last score: ${lastScore.toLocaleString()} pts — load today's score to reveal`
+          : 'Enter score above or connect your Google Sheet';
+    } else if (savedUrl) {
+      document.getElementById('sheetsHint').textContent = 'Saved ✓ — click Load to pull today\'s score';
+    }
+
+    // Restore PBS focus from localStorage
+    const savedFocus = localStorage.getItem('pbs_focus');
+    if (savedFocus) {
+      document.getElementById('focusText').innerHTML = `<em>${savedFocus}</em>`;
+      document.getElementById('focusText').style.color = '';
+      document.getElementById('focusText').classList.add('loaded');
+    }
+  })();
+
+  async function fetchFromSheets() {
+    const raw = document.getElementById('sheetsUrl').value.trim();
+    const status = document.getElementById('sheetsStatus');
+    const btn = document.getElementById('fetchBtn');
+    const hint = document.getElementById('sheetsHint');
+    if (!raw) { status.textContent = '⚠️'; return; }
+
+    btn.disabled = true;
+    status.textContent = '⏳';
+    hint.textContent = 'Fetching…';
+
+    // Use JSONP — works from file:// with no CORS issues
+    const callbackName = 'pbsCallback_' + Date.now();
+    const script = document.createElement('script');
+    // Append callback param to URL
+    const url = raw + (raw.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+    script.src = url;
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      status.textContent = '❌';
+      hint.textContent = 'Request timed out. Check your Apps Script URL ends in /exec.';
+      btn.disabled = false;
+    }, 10000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName] = function(data) {
+      cleanup();
+      try {
+        const val     = parseInt(data.score) || 0;
+        const winners = Array.isArray(data.winners) ? data.winners : [];
+        const focus   = data.focus || '';
+
+        if (!val) throw new Error('Score is 0 or missing — check C6 in your sheet');
+
+        // Show PBS focus
+        if (focus) {
+          document.getElementById('focusText').innerHTML = `<em>${focus}</em>`;
+          document.getElementById('focusText').style.color = '';
+          document.getElementById('focusText').classList.add('loaded');
+          try { localStorage.setItem('pbs_focus', focus); } catch(e) {}
+        }
+
+        // Restore winners from sheet
+        if (winners.length) {
+          rewardHistory = winners.filter(w => w.reward);
+          try { localStorage.setItem(HISTORY_KEY, JSON.stringify(rewardHistory)); } catch(e) {}
+          renderHistory();
+        }
+
+        // Reset reveal state for new score
+        revealed = false;
+        animating = false;
+        stopRolling();
+        scoreDisplay.style.display = 'none';
+        maskWrap.style.display = 'inline-flex';
+        revealBtn.classList.remove('done');
+        revealBtn.innerHTML = '&#127908;&nbsp; REVEAL';
+        revealBtn.disabled = false;
+
+        scoreInput.value = val;
+        updateStars();
+        status.textContent = '✅';
+        localStorage.setItem(SHEETS_KEY, raw);
+        hint.textContent = `Loaded ${val.toLocaleString()} pts — press Reveal when ready`;
+        setTimeout(() => {
+          document.getElementById('sheetsRow').style.display = 'none';
+        }, 800);
+
+      } catch(err) {
+        status.textContent = '❌';
+        hint.textContent = `Error: ${err.message}`;
+        console.error('Sheets parse error:', err);
+      }
+      btn.disabled = false;
+    };
+
+    script.onerror = function() {
+      cleanup();
+      status.textContent = '❌';
+      hint.textContent = 'Could not reach the Apps Script. Check the URL ends in /exec.';
+      btn.disabled = false;
+    };
+
+    document.head.appendChild(script);
+  }
+</script>
+</body>
+</html>
